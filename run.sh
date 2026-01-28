@@ -1,7 +1,7 @@
 #!/bin/bash
 # rebuild project
-cmake -S . -B build
-cmake --build build
+cmake -S . -B build || { echo "CMake configuration failed"; exit 1; }
+cmake --build build || { echo "Build failed"; exit 1; }
 
-# launch the executable in Konsole
-konsole -e bash -c "export QT_QPA_PLATFORM=xcb; ./build/LinuxPlayer; exit"
+# Launch the executable in Konsole and close when done
+konsole -e bash -c "export QT_QPA_PLATFORM=xcb; ./build/LinuxPlayer"

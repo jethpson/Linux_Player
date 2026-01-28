@@ -3,26 +3,22 @@
 
 #include <QMenuBar>
 #include <QMenu>
-#include <QMouseEvent>
-#include <QTimer>
 #include <QVBoxLayout>
-#include <QShortcut>
+#include <QFileDialog>
 #include <QScreen>
 #include <QGuiApplication>
-#include <QUrl>
+#include <QMouseEvent>
+#include <QShortcut>
 #include <QDebug>
+#include <QCoreApplication>
 
-#include <QFileDialog>
-
-PlayerWindow::PlayerWindow(QWidget *parent)
+PlayerWindow::PlayerWindow(QWidget* parent)
     : QMainWindow(parent)
 {
     // ----- Menu Bar -----
-    QMenuBar *menuBar = this->menuBar();
+    QMenuBar* menuBar = this->menuBar();
 
-    // File menu
-    QMenu *fileMenu = menuBar->addMenu("&File");
-
+    QMenu* fileMenu = menuBar->addMenu("&File");
     fileMenu->addAction("&Open...", this, [this]() {
         QString filePath = QFileDialog::getOpenFileName(
             this,
@@ -30,29 +26,22 @@ PlayerWindow::PlayerWindow(QWidget *parent)
             QString(),
             "Video Files (*.mp4 *.mkv *.avi *.mov *.webm);;All Files (*)"
         );
-
         if (!filePath.isEmpty()) {
+            videoPlayer->setLoop(true);
             videoPlayer->loadFile(filePath);
         }
     });
-
     fileMenu->addSeparator();
-
     fileMenu->addAction("E&xit", this, &QMainWindow::close);
 
-
-    // Options menu
-    QMenu *optionsMenu = menuBar->addMenu("&Options");
+    QMenu* optionsMenu = menuBar->addMenu("&Options");
     optionsMenu->addAction("&Fullscreen Toggle", this, [this]() {
         if (isFullScreen()) showNormal();
         else showFullScreen();
     });
 
-    // Help menu
-    QMenu *helpMenu = menuBar->addMenu("&Help");
-    helpMenu->addAction("&About", []() {
-        qInfo("LinuxPlayer v0.1");
-    });
+    QMenu* helpMenu = menuBar->addMenu("&Help");
+    helpMenu->addAction("&About", []() { qInfo("LinuxPlayer v0.1"); });
 
     // ----- Shortcuts -----
     new QShortcut(Qt::Key_F, this, [this]() {
@@ -66,19 +55,52 @@ PlayerWindow::PlayerWindow(QWidget *parent)
 
     // ----- Video Widget -----
     videoPlayer = new VideoPlayer("/home/jakei/Projects/Linux_Player/test4.mp4", this);
+    videoPlayer->setAttribute(Qt::WA_OpaquePaintEvent, true);
+    videoPlayer->setAttribute(Qt::WA_TranslucentBackground, false);
+    videoPlayer->setAutoFillBackground(true);
 
-    // Create a container widget as central widget
     QWidget* container = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(container);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(videoPlayer, 1);  // stretch factor ensures filling
-    container->setLayout(layout);        // assign layout to container
+    layout->setContentsMargins(0,0,0,0);
+    layout->addWidget(videoPlayer, 1);
+    container->setLayout(layout);
     setCentralWidget(container);
 
-    // Enable mouse tracking
+    // Force initial icon positioning by triggering resizeEvent
+    QTimer::singleShot(0, this, [this]() {
+        // Create a dummy QResizeEvent (width/height before/after can be 0)
+        QResizeEvent dummy(QSize(width(), height()), QSize(width(), height()));
+        this->resizeEvent(&dummy);  // call your resizeEvent override to position icons
+    });
+
+    // ----- Play/Pause Icons -----
+    QString workspacePath = QCoreApplication::applicationDirPath() + "/../resources/";
+    QPixmap playPix(workspacePath + "play.png");
+    QPixmap stopPix(workspacePath + "pause.png");
+
+    qDebug() << "Corrupt Resources:" << playPix.isNull();
+
+    playingIcon = new QLabel(this);
+    stoppedIcon = new QLabel(this);
+    
+    playingIcon->setPixmap(playPix.scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    stoppedIcon->setPixmap(stopPix.scaled(60, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+    playingIcon->setFixedSize(60, 60);
+    stoppedIcon->setFixedSize(60, 60);
+
+    playingIcon->setStyleSheet("background: transparent; border: none;");
+    stoppedIcon->setStyleSheet("background: transparent; border: none;");
+
+    playingIcon->show();
+    stoppedIcon->show();
+    playingIcon->raise();
+    stoppedIcon->raise();
+
+    // ----- Mouse tracking & event filter -----
     setMouseTracking(true);
     videoPlayer->setMouseTracking(true);
-    videoPlayer->installEventFilter(this);   // forward mouse events properly
+    videoPlayer->installEventFilter(this);
 
     // ----- Window scaling -----
     QScreen* screen = QGuiApplication::primaryScreen();
@@ -89,33 +111,71 @@ PlayerWindow::PlayerWindow(QWidget *parent)
 
     // ----- Auto-hide menu bar -----
     menuHideTimer = new QTimer(this);
-    menuHideTimer->setInterval(1500); // 1.5 seconds
-    connect(menuHideTimer, &QTimer::timeout, [menuBar, this]() {
-        if (isFullScreen() && !menuBar->activeAction()) {
-            menuBar->hide();
-        }
+    menuHideTimer->setInterval(1500);
+    connect(menuHideTimer, &QTimer::timeout, [menuBar]() {
+        menuBar->hide();
     });
 
-    // Initial menu bar state
     if (isFullScreen())
         menuBar->hide();
     else
         menuBar->show();
+
+    // ----- Connect video signals -----
+    connect(videoPlayer, &VideoPlayer::playing, this, &PlayerWindow::showPlayingIcon);
+    connect(videoPlayer, &VideoPlayer::stopped, this, &PlayerWindow::showStoppedIcon);
+    
+    qDebug() << "Sucessfully opened Player";
 }
 
+// ----- Resize icons dynamically -----
+void PlayerWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+
+    if (playingIcon && stoppedIcon && videoPlayer) {
+        int offsetY = 10;
+        int x = (videoPlayer->width() - playingIcon->width()) / 2;
+        int y = videoPlayer->height() - playingIcon->height() - offsetY;
+
+        playingIcon->move(x, y);
+        stoppedIcon->move(x, y);
+    }
+}
+
+// ----- Show/hide play/pause icons -----
+void PlayerWindow::showPlayingIcon()
+{
+    if (playingIcon && stoppedIcon) {
+        playingIcon->setVisible(true);
+        stoppedIcon->setVisible(false);
+        playingIcon->raise();
+        stoppedIcon->raise();
+    }
+}
+
+void PlayerWindow::showStoppedIcon()
+{
+    if (playingIcon && stoppedIcon) {
+        playingIcon->setVisible(false);
+        stoppedIcon->setVisible(true);
+        playingIcon->raise();
+        stoppedIcon->raise();
+    }
+}
+
+// ----- Mouse move to show menu -----
 void PlayerWindow::mouseMoveEvent(QMouseEvent* event)
 {
     QMenuBar* menuBar = this->menuBar();
 
     if (isFullScreen()) {
-        // Only show menu when near the top
-        if (event->y() <= 30) {  // <-- this is the top edge trigger
+        if (event->y() <= 30) {
             if (!menuBar->isVisible())
                 menuBar->show();
-            menuHideTimer->start();  // restart auto-hide timer
+            menuHideTimer->start();
         }
     } else {
-        // Always show menu in windowed mode
         if (!menuBar->isVisible())
             menuBar->show();
         menuHideTimer->stop();
@@ -124,29 +184,36 @@ void PlayerWindow::mouseMoveEvent(QMouseEvent* event)
     QMainWindow::mouseMoveEvent(event);
 }
 
+// ----- Forward mouse from videoPlayer -----
 bool PlayerWindow::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == videoPlayer && event->type() == QEvent::MouseMove) {
         QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-        QPoint globalPos = videoPlayer->mapTo(this, mouseEvent->pos());
-        QMouseEvent translatedEvent(mouseEvent->type(), globalPos, mouseEvent->button(),
-                                    mouseEvent->buttons(), mouseEvent->modifiers());
-        mouseMoveEvent(&translatedEvent);
+        QPoint mapped = videoPlayer->mapTo(this, mouseEvent->pos());
+        QMouseEvent translated(mouseEvent->type(), mapped, mouseEvent->button(),
+                               mouseEvent->buttons(), mouseEvent->modifiers());
+        mouseMoveEvent(&translated);
         return true;
     }
     return QMainWindow::eventFilter(obj, event);
 }
 
-// ----- Detect fullscreen/windowed changes dynamically -----
+// ----- Handle fullscreen changes dynamically -----
 void PlayerWindow::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::WindowStateChange) {
         QMenuBar* menuBar = this->menuBar();
-        if (isFullScreen())
+        if (isFullScreen()) {
             menuBar->hide();
-        else {
+            menuHideTimer->start();
+        } else {
             menuBar->show();
             menuHideTimer->stop();
+
+            QTimer::singleShot(0, this, [this]() {
+                QResizeEvent ev(size(), size());
+                resizeEvent(&ev);
+            });
         }
     }
 

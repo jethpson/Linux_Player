@@ -1,7 +1,7 @@
 #include <QApplication>
 #include <QScreen>
 #include <iostream>
-
+#include <QDebug>
 #include "shortcuts.h"
 #include "videoplayer.h"
 
