@@ -2,7 +2,7 @@
 #include <QScreen>
 #include <iostream>
 #include <QDebug>
-#include "shortcuts.h"
+#include "mediacontroller.h"
 #include "videoplayer.h"
 
 
