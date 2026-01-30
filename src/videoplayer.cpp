@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QResizeEvent>
 #include <QShowEvent>
+#include <vlc/vlc.h>
 
 VideoPlayer::VideoPlayer(const QString& filePath, QWidget* parent)
     : QWidget(parent)
@@ -80,6 +81,29 @@ void VideoPlayer::stop()
         emit stopped();  // <-- emit signal
     }
 }
+
+void VideoPlayer::seekForward(int ms)
+{
+    if (!mediaPlayer) return;
+
+    // get current time in ms
+    libvlc_time_t curr = libvlc_media_player_get_time(mediaPlayer);
+
+    // set new time
+    libvlc_media_player_set_time(mediaPlayer, curr + ms);
+}
+
+void VideoPlayer::seekBackward(int ms)
+{
+    if (!mediaPlayer) return;
+
+    libvlc_time_t curr = libvlc_media_player_get_time(mediaPlayer);
+    libvlc_time_t newTime = curr - ms;
+    if (newTime < 0) newTime = 0;
+    libvlc_media_player_set_time(mediaPlayer, newTime);
+}
+
+
 
 // Load a new file dynamically
 void VideoPlayer::loadFile(const QString& filePath)

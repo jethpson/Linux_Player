@@ -1,4 +1,5 @@
 #include "mediacontroller.h"
+#include "videoprogressbar.h"
 #include "videoplayer.h"
 #include "clickablelabel.h"
 
@@ -64,9 +65,8 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         }
     });
 
-
     // ----- Video Widget -----
-    videoPlayer = new VideoPlayer("/home/jakei/Projects/Linux_Player/test.mp4", this);
+    videoPlayer = new VideoPlayer("/home/jakei/Projects/Linux_Player/Unselected.mp4", this);
     videoPlayer->setAttribute(Qt::WA_OpaquePaintEvent, false);
     videoPlayer->setAttribute(Qt::WA_TranslucentBackground, true);
     videoPlayer->setAutoFillBackground(false);
@@ -78,33 +78,48 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     container->setLayout(layout);
     setCentralWidget(container);
 
-
     QTimer::singleShot(0, this, [this]() {
         QResizeEvent dummy(QSize(width(), height()), QSize(width(), height()));
         this->resizeEvent(&dummy);
     });
 
-    // ----- Play / Pause Icons -----
+    // ----- Load icons (local pixmaps) -----
     QString workspacePath = QCoreApplication::applicationDirPath() + "/../resources/";
+
     QPixmap playPix(workspacePath + "play.png");
     QPixmap stopPix(workspacePath + "pause.png");
+    QPixmap forwardPix(workspacePath + "forward.png");
+    QPixmap backwardPix(workspacePath + "backward.png");
 
-    playingIcon = new ClickableLabel(this); 
+    playingIcon = new ClickableLabel(this);
     stoppedIcon = new ClickableLabel(this);
+    forwardIcon = new ClickableLabel(this);
+    backwardIcon = new ClickableLabel(this);
 
     playingIcon->setPixmap(playPix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     stoppedIcon->setPixmap(stopPix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    forwardIcon->setPixmap(forwardPix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    backwardIcon->setPixmap(backwardPix.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
     playingIcon->setFixedSize(120, 120);
     stoppedIcon->setFixedSize(120, 120);
+    forwardIcon->setFixedSize(120, 120);
+    backwardIcon->setFixedSize(120, 120);
 
     playingIcon->setStyleSheet("background: transparent; border: none;");
     stoppedIcon->setStyleSheet("background: transparent; border: none;");
+    forwardIcon->setStyleSheet("background: transparent; border: none;");
+    backwardIcon->setStyleSheet("background: transparent; border: none;");
 
     playingIcon->show();
     stoppedIcon->hide();
+    forwardIcon->show();
+    backwardIcon->show();
+
     playingIcon->raise();
     stoppedIcon->raise();
+    forwardIcon->raise();
+    backwardIcon->raise();
 
     // ----- ICON CLICK BEHAVIOR -----
     connect(playingIcon, &ClickableLabel::clicked, this, [this]() {
@@ -115,6 +130,14 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     connect(stoppedIcon, &ClickableLabel::clicked, this, [this]() {
         videoPlayer->play();
         showPlayingIcon();
+    });
+
+    connect(forwardIcon, &ClickableLabel::clicked, this, [this]() {
+        if(videoPlayer) videoPlayer->seekForward(5000); // 5 sec forward
+    });
+
+    connect(backwardIcon, &ClickableLabel::clicked, this, [this]() {
+        if(videoPlayer) videoPlayer->seekBackward(5000); // 5 sec backward
     });
 
     // ----- Mouse tracking & event filter -----
@@ -147,6 +170,10 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     connect(videoPlayer, &VideoPlayer::playing, this, &PlayerWindow::showPlayingIcon);
     connect(videoPlayer, &VideoPlayer::stopped, this, &PlayerWindow::showStoppedIcon);
 
+    progressBar = new VideoProgressBar(videoPlayer->getLibVLCPlayer(), this);
+    layout->addWidget(progressBar);
+    progressBar->raise();
+
     qDebug() << "Successfully opened Player";
 }
 
@@ -155,16 +182,23 @@ void PlayerWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
 
-    if (playingIcon && stoppedIcon && videoPlayer) {
-        int normalOffsetY = 20;    // default distance from bottom
+    if (playingIcon && stoppedIcon && videoPlayer && forwardIcon && backwardIcon) {
+        int normalOffsetY = 0;    // default distance from bottom
+
+        if (isFullScreen()){
+            normalOffsetY = 15;
+        } else {
+            normalOffsetY = -20;
+        }
+        
         int hiddenOffsetY = 500;   // move down when mouse not near bottom
         int offsetY;
 
-        // Check if mouse is within 30 px of bottom
+        // Check if mouse is near bottom
         if (mouseY >= videoPlayer->height() - 150) {
-            offsetY = normalOffsetY; // stay near bottom
+            offsetY = normalOffsetY;
         } else {
-            offsetY = -hiddenOffsetY; // move down 100px off bottom
+            offsetY = -hiddenOffsetY;
         }
 
         int x = (videoPlayer->width() - playingIcon->width()) / 2;
@@ -172,13 +206,17 @@ void PlayerWindow::resizeEvent(QResizeEvent* event)
 
         playingIcon->move(x, y);
         stoppedIcon->move(x, y);
+
+        int spacing = 0; // distance from play/pause button
+
+        backwardIcon->move(x - backwardIcon->width() - spacing, y + (playingIcon->height() - backwardIcon->height()) / 2);
+        forwardIcon->move(x + playingIcon->width() + spacing, y + (playingIcon->height() - forwardIcon->height()) / 2);
     }
 }
 
 // ----- Show/hide play/pause icons -----
 void PlayerWindow::showPlayingIcon()
 {
-
     if (playingIcon && stoppedIcon) {
         playingIcon->setVisible(true);
         stoppedIcon->setVisible(false);
@@ -190,7 +228,6 @@ void PlayerWindow::showPlayingIcon()
 
 void PlayerWindow::showStoppedIcon()
 {
-
     if (playingIcon && stoppedIcon) {
         playingIcon->setVisible(false);
         stoppedIcon->setVisible(true);
@@ -205,10 +242,8 @@ void PlayerWindow::mouseMoveEvent(QMouseEvent* event)
 {
     QMenuBar* menuBar = this->menuBar();
 
-    // Track last mouse Y relative to videoPlayer
     mouseY = event->pos().y();
 
-    // Auto-show top menu if near top
     if (isFullScreen()) {
         if (event->y() <= 30) {
             if (!menuBar->isVisible())
@@ -225,9 +260,12 @@ void PlayerWindow::mouseMoveEvent(QMouseEvent* event)
     QResizeEvent dummy(size(), size());
     resizeEvent(&dummy);
 
+    if (progressBar) {
+        progressBar->setVisibleBasedOnMouseY(mouseY, videoPlayer->height());
+    }
+
     QMainWindow::mouseMoveEvent(event);
 }
-
 
 // ----- Forward mouse from videoPlayer -----
 bool PlayerWindow::eventFilter(QObject* obj, QEvent* event)

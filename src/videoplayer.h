@@ -12,10 +12,14 @@ public:
     explicit VideoPlayer(const QString &filePath, QWidget *parent = nullptr);
     ~VideoPlayer();
 
+    libvlc_media_player_t* getLibVLCPlayer() const { return mediaPlayer; }
+
     void play();
     void pause();
     void stop();
     void loadFile(const QString& filePath);
+    void seekForward(int ms);
+    void seekBackward(int ms);
 
     void setLoop(bool loop) { loopEnabled = loop; }
 

@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QTimer>
 #include "clickablelabel.h"
+#include "videoprogressbar.h"
 
 class VideoPlayer;
 
@@ -31,8 +32,11 @@ private:
     QTimer* menuHideTimer = nullptr;
     ClickableLabel* playingIcon;
     ClickableLabel* stoppedIcon;
+    ClickableLabel* forwardIcon;
+    ClickableLabel* backwardIcon;
     bool isVideoPlaying = false;
     int mouseY = 0;
+    VideoProgressBar* progressBar = nullptr;
 
 
 };
