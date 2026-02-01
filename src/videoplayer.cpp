@@ -204,3 +204,25 @@ void VideoPlayer::setupEndReachedHandler()
         this
     );
 }
+
+void VideoPlayer::setVolume(int value)
+{
+    if (mediaPlayer)
+        libvlc_audio_set_volume(mediaPlayer, value); // VLC volume API
+}
+
+void VideoPlayer::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+        emit clicked();
+
+    QWidget::mousePressEvent(event);
+}
+
+void VideoPlayer::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+        emit doubleClicked();
+
+    QWidget::mouseDoubleClickEvent(event);
+}

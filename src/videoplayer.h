@@ -20,16 +20,21 @@ public:
     void loadFile(const QString& filePath);
     void seekForward(int ms);
     void seekBackward(int ms);
+    void setVolume(int value);
 
     void setLoop(bool loop) { loopEnabled = loop; }
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
     void showEvent(QShowEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 
 signals:
     void playing();   // emitted when playback starts/resumes
     void stopped();   // emitted when playback pauses/stops
+    void clicked();
+    void doubleClicked();
 
 private:
     libvlc_instance_t* vlcInstance = nullptr;

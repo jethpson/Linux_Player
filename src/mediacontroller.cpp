@@ -3,14 +3,17 @@
 #include "videoplayer.h"
 #include "clickablelabel.h"
 
+#include <QApplication>
 #include <QMenuBar>
 #include <QMenu>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QFileDialog>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QShortcut>
+#include <QTimer>
 #include <QDebug>
 #include <QCoreApplication>
 
@@ -50,11 +53,9 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         if (isFullScreen()) showNormal();
         else showFullScreen();
     });
-
     new QShortcut(Qt::Key_Escape, this, [this]() {
         if (isFullScreen()) showNormal();
     });
-
     new QShortcut(Qt::Key_Space, this, [this]() {
         if (isVideoPlaying) {
             videoPlayer->pause();
@@ -65,25 +66,40 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         }
     });
 
-    // ----- Video Widget -----
+    // ----- Video Player -----
     videoPlayer = new VideoPlayer("/home/jakei/Projects/Linux_Player/Unselected.mp4", this);
     videoPlayer->setAttribute(Qt::WA_OpaquePaintEvent, false);
     videoPlayer->setAttribute(Qt::WA_TranslucentBackground, true);
     videoPlayer->setAutoFillBackground(false);
 
+    // ----- Container & Layout -----
     QWidget* container = new QWidget(this);
-    QVBoxLayout* layout = new QVBoxLayout(container);
-    layout->setContentsMargins(0,0,0,0);
-    layout->addWidget(videoPlayer, 1);
-    container->setLayout(layout);
-    setCentralWidget(container);
+    QVBoxLayout* mainLayout = new QVBoxLayout(container);
+    mainLayout->setContentsMargins(0,0,0,0);
 
-    QTimer::singleShot(0, this, [this]() {
-        QResizeEvent dummy(QSize(width(), height()), QSize(width(), height()));
-        this->resizeEvent(&dummy);
+    mainLayout->addWidget(videoPlayer, 1);
+
+    // ----- Progress Bar -----
+    progressBar = new VideoProgressBar(videoPlayer->getLibVLCPlayer(), this);
+    mainLayout->addWidget(progressBar);
+
+    // ----- Volume Slider -----
+    volumeSlider = new QSlider(Qt::Horizontal, this);
+    volumeSlider->setRange(0, 100);
+    volumeSlider->setValue(1000);
+    volumeSlider->setFixedWidth(200);
+    volumeSlider->setFixedHeight(120);
+    volumeSlider->setAttribute(Qt::WA_OpaquePaintEvent, false);
+    volumeSlider->setAttribute(Qt::WA_TranslucentBackground, true);
+
+    connect(volumeSlider, &QSlider::valueChanged, this, [this](int value){
+        if(videoPlayer) videoPlayer->setVolume(value);
     });
 
-    // ----- Load icons (local pixmaps) -----
+    container->setLayout(mainLayout);
+    setCentralWidget(container);
+
+    // ----- Icons -----
     QString workspacePath = QCoreApplication::applicationDirPath() + "/../resources/";
 
     QPixmap playPix(workspacePath + "play.png");
@@ -121,26 +137,22 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     forwardIcon->raise();
     backwardIcon->raise();
 
-    // ----- ICON CLICK BEHAVIOR -----
     connect(playingIcon, &ClickableLabel::clicked, this, [this]() {
         videoPlayer->pause();
         showStoppedIcon();
     });
-
     connect(stoppedIcon, &ClickableLabel::clicked, this, [this]() {
         videoPlayer->play();
         showPlayingIcon();
     });
-
     connect(forwardIcon, &ClickableLabel::clicked, this, [this]() {
-        if(videoPlayer) videoPlayer->seekForward(5000); // 5 sec forward
+        if(videoPlayer) videoPlayer->seekForward(5000);
     });
-
     connect(backwardIcon, &ClickableLabel::clicked, this, [this]() {
-        if(videoPlayer) videoPlayer->seekBackward(5000); // 5 sec backward
+        if(videoPlayer) videoPlayer->seekBackward(5000);
     });
 
-    // ----- Mouse tracking & event filter -----
+    // ----- Mouse tracking -----
     setMouseTracking(true);
     videoPlayer->setMouseTracking(true);
     videoPlayer->installEventFilter(this);
@@ -149,10 +161,9 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     QScreen* screen = QGuiApplication::primaryScreen();
     QRect screenGeometry = screen->geometry();
     resize(screenGeometry.width() * 0.8, screenGeometry.height() * 0.8);
-    move((screenGeometry.width() - width()) / 2,
-         (screenGeometry.height() - height()) / 2);
+    move((screenGeometry.width() - width()) / 2, (screenGeometry.height() - height()) / 2);
 
-    // ----- Auto-hide menu bar -----
+    // ----- Auto-hide menu -----
     menuHideTimer = new QTimer(this);
     menuHideTimer->setInterval(1500);
     connect(menuHideTimer, &QTimer::timeout, [this]() {
@@ -161,26 +172,69 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         this->resizeEvent(&dummy);
     });
 
-    if (isFullScreen())
-        menuBar->hide();
-    else
-        menuBar->show();
+    if (isFullScreen()) menuBar->hide();
+    else menuBar->show();
 
     // ----- Connect video signals -----
     connect(videoPlayer, &VideoPlayer::playing, this, &PlayerWindow::showPlayingIcon);
     connect(videoPlayer, &VideoPlayer::stopped, this, &PlayerWindow::showStoppedIcon);
 
-    progressBar = new VideoProgressBar(videoPlayer->getLibVLCPlayer(), this);
-    layout->addWidget(progressBar);
-    progressBar->raise();
+    // ----- Single vs Double Click on Video -----
+    singleClickTimer = new QTimer(this);
+    singleClickTimer->setSingleShot(true);
+    singleClickTimer->setInterval(QApplication::doubleClickInterval());
+
+    // Single click confirmed
+    connect(singleClickTimer, &QTimer::timeout, this, [this]() {
+        if (isVideoPlaying) {
+            videoPlayer->pause();
+            showStoppedIcon();
+        } else {
+            videoPlayer->play();
+            showPlayingIcon();
+        }
+    });
+
+    // Handle clicked signal from videoPlayer
+    connect(videoPlayer, &VideoPlayer::clicked, this, [this]() {
+        if (singleClickTimer->isActive()) {
+            // Double click detected
+            singleClickTimer->stop();
+            if (isFullScreen()) showNormal();
+            else showFullScreen();
+        } else {
+            // Start timer to wait for possible double click
+            singleClickTimer->start();
+        }
+    });
 
     qDebug() << "Successfully opened Player";
 }
+
 
 // ----- Resize icons dynamically -----
 void PlayerWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
+
+    if (volumeSlider)
+    {
+
+        int sliderNormalOffsetY = 0;
+
+        if (isFullScreen()){
+            sliderNormalOffsetY = 15;
+        } else {
+            sliderNormalOffsetY = -20;
+        }
+
+        int sliderHiddenOffsetY = 500;
+        int sliderOffsetY = (mouseY >= videoPlayer->height() - 150) ? sliderNormalOffsetY : -sliderHiddenOffsetY;
+
+        int sliderX = (videoPlayer->width() - volumeSlider->width()) / 2 + 280;
+        int sliderY = videoPlayer->height() - volumeSlider->height() - sliderOffsetY;
+        volumeSlider->move(sliderX, sliderY);
+    }
 
     if (playingIcon && stoppedIcon && videoPlayer && forwardIcon && backwardIcon) {
         int normalOffsetY = 0;    // default distance from bottom
@@ -301,4 +355,10 @@ void PlayerWindow::changeEvent(QEvent* event)
     }
 
     QMainWindow::changeEvent(event);
+}
+
+void PlayerWindow::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    Q_UNUSED(event);
+    // Optionally, do nothing here, since we handle double click via the clicked signal
 }

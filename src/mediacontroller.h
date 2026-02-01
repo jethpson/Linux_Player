@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QTimer>
+#include <QSlider>
 #include "clickablelabel.h"
 #include "videoprogressbar.h"
 
@@ -21,6 +22,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
     void changeEvent(QEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 
 
 private slots:
@@ -37,6 +39,8 @@ private:
     bool isVideoPlaying = false;
     int mouseY = 0;
     VideoProgressBar* progressBar = nullptr;
+    QSlider* volumeSlider = nullptr;
+    QTimer* singleClickTimer = nullptr;
 
 
 };
