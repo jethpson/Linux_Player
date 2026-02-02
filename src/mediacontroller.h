@@ -1,13 +1,15 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QLabel>
 #include <QTimer>
 #include <QSlider>
-#include "clickablelabel.h"
+#include "videoplayer.h"
 #include "videoprogressbar.h"
-
-class VideoPlayer;
+#include "clickablelabel.h"
+#include "menubar.h"
+#include "volumeslider.h"
+#include "iconcontroller.h"
+#include "layoutcontroller.h"
 
 class PlayerWindow : public QMainWindow
 {
@@ -17,13 +19,14 @@ public:
     explicit PlayerWindow(QWidget* parent = nullptr);
     ~PlayerWindow() = default;
 
+signals:
+    void mediaReady();
+
 protected:
     void resizeEvent(QResizeEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
     void changeEvent(QEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
-
 
 private slots:
     void showPlayingIcon();
@@ -31,16 +34,20 @@ private slots:
 
 private:
     VideoPlayer* videoPlayer = nullptr;
-    QTimer* menuHideTimer = nullptr;
-    ClickableLabel* playingIcon;
-    ClickableLabel* stoppedIcon;
-    ClickableLabel* forwardIcon;
-    ClickableLabel* backwardIcon;
-    bool isVideoPlaying = false;
-    int mouseY = 0;
     VideoProgressBar* progressBar = nullptr;
     QSlider* volumeSlider = nullptr;
+    ClickableLabel* playingIcon = nullptr;
+    ClickableLabel* stoppedIcon = nullptr;
+    ClickableLabel* forwardIcon = nullptr;
+    ClickableLabel* backwardIcon = nullptr;
+
+    MenuBarController* menuController = nullptr;
+    VolumeSliderController* volumeController = nullptr;
+    IconController* iconController = nullptr;
+    LayoutController* layoutController = nullptr;
+
+    QTimer* menuHideTimer = nullptr;
     QTimer* singleClickTimer = nullptr;
-
-
+    bool isVideoPlaying = false;
+    int mouseY = 0;
 };
