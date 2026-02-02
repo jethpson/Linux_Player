@@ -14,6 +14,8 @@ public:
     VLCLoadWorker(const QString& file, libvlc_instance_t* instance)
         : filePath(file), vlcInstance(instance) {}
 
+
+
 public slots:
     void process();
 
@@ -42,6 +44,7 @@ public:
     void setVolume(int value);
     void setLoop(bool loop) { loopEnabled = loop; }
     bool isPlaying() const { return playingState; }
+    QString getCurrentFile() const { return currentFile; }
     libvlc_media_player_t* getMediaPlayer() const { return mediaPlayer; }
 
 
@@ -65,6 +68,7 @@ private:
     bool loopEnabled = false;
     bool playingState = false;
     bool isLoading = false;
+    QString currentFile;
     QString pendingFile;
 
     QThread* loaderThread = nullptr;

@@ -77,6 +77,8 @@ void VideoPlayer::loadFile(const QString& filePath)
 {
     qDebug() << "[VideoPlayer] loadFile requested:" << filePath;
 
+    currentFile = filePath;
+    
     // Check if a loader thread is already active
     if (loaderThread) {
         qDebug() << "[VideoPlayer] Warning: a loader thread is already running!";

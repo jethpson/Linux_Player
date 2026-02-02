@@ -21,7 +21,7 @@
 #include <QTimer>
 #include <QDebug>
 #include <QCoreApplication>
-
+ 
 PlayerWindow::PlayerWindow(QWidget* parent)
     : QMainWindow(parent)
 {
@@ -30,21 +30,27 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     dir.cdUp();
     QString videoPath = dir.filePath("Unselected.mp4");
 
-    // ----- Video Player -----
+    // Video Player
     videoPlayer = new VideoPlayer(videoPath, this);
     videoPlayer->setAttribute(Qt::WA_OpaquePaintEvent, false);
     videoPlayer->setAttribute(Qt::WA_TranslucentBackground, true);
     videoPlayer->setAutoFillBackground(false);
     videoPlayer->setLoop(true);
 
-    // ----- Menu & Shortcuts -----
+    // Menu & Shortcuts
     menuController = new MenuBarController(this, videoPlayer, this);
 
-    // ----- Volume Slider -----
-    volumeController = new VolumeSliderController(videoPlayer, this);
-    volumeSlider = volumeController->getSlider();
+    // Volume Slider
+    volumeSlider = new QSlider(Qt::Horizontal, this);
+    volumeSlider->setRange(0, 100);
+    int initialVolume = volumeController ? volumeController->getLastVolume() : 50;
+    volumeSlider->setEnabled(false);
+    volumeSlider->setValue(initialVolume);
+    volumeSlider->setFixedWidth(200);
+    volumeSlider->setFixedHeight(40);
+    volumeSlider->setFocusPolicy(Qt::NoFocus);
 
-    // ----- Progress Bar -----
+    // Progress Bar
     progressBar = new VideoProgressBar(nullptr, this);
 
     // Connect after mediaPlayer is ready
@@ -54,17 +60,33 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         {
             qDebug() << "[PlayerWindow] Assigning mediaPlayer to progress bar";
             progressBar->setPlayer(mp);
+
+                QDir dir(QCoreApplication::applicationDirPath());
+                dir.cdUp();
+                QString DefaultVid = dir.filePath("Unselected.mp4");
+
+            if (videoPlayer->getCurrentFile() == DefaultVid)
+                volumeSlider->setEnabled(false);
+            else
+                volumeSlider->setEnabled(true);
         }
     });
 
-    // ----- Icons -----
-    iconController = new IconController(videoPlayer, this);
+    // Volume slider overlay
+    volumeController = new VolumeSliderController(videoPlayer, this);
+    volumeController->setSlider(volumeSlider);
+
+    // Icons
+    iconController = new IconController(videoPlayer, this, volumeController);
     playingIcon = iconController->getPlayingIcon();
     stoppedIcon = iconController->getStoppedIcon();
     forwardIcon = iconController->getForwardIcon();
     backwardIcon = iconController->getBackwardIcon();
+    volumeIcon = iconController->getVolumeIcon();
+    volumeMuteIcon = iconController->getVolumeMuteIcon();
+    
 
-    // ----- Container Layout -----
+    // Container Layout
     QWidget* container = new QWidget(this);
     container->setContentsMargins(0,0,0,0);
     container->setAttribute(Qt::WA_StyledBackground, true);
@@ -78,13 +100,16 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     stoppedIcon->setParent(container);
     forwardIcon->setParent(container);
     backwardIcon->setParent(container);
+    volumeIcon->setParent(container);
+    volumeMuteIcon->setParent(container);
 
     // Let LayoutController handle all positioning
     layoutController = new LayoutController(
         videoPlayer, container,
         volumeSlider, progressBar,
         playingIcon, stoppedIcon,
-        forwardIcon, backwardIcon,
+        forwardIcon, backwardIcon, 
+        volumeIcon, volumeMuteIcon,
         this->menuBar()
     );
 
@@ -103,14 +128,6 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     progressBar->move(0, container->height() - progressBar->height());
     progressBar->show();
 
-    // Volume slider overlay
-    volumeSlider->setParent(container);
-    volumeSlider->setFixedHeight(60);
-    volumeSlider->setFocusPolicy(Qt::NoFocus);
-    volumeSlider->move((container->width() - volumeSlider->width()) / 2,
-                       container->height() - volumeSlider->height());
-    volumeSlider->show();
-
     // Icons overlay
     playingIcon->setParent(container);
     stoppedIcon->setParent(container);
@@ -122,31 +139,32 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     forwardIcon->raise();
     backwardIcon->raise();
 
-    // ----- Layout Controller -----
+    // Layout Controller
     layoutController = new LayoutController(
         videoPlayer, this,
         volumeSlider, progressBar,
         playingIcon, stoppedIcon,
         forwardIcon, backwardIcon,
+        volumeIcon, volumeMuteIcon,
         this->menuBar()
     );
 
-    // ----- Mouse Tracking -----
+    // Mouse Tracking
     setMouseTracking(true);
     videoPlayer->setMouseTracking(true);
     videoPlayer->installEventFilter(this);
 
-    // ----- Window Scaling -----
+    // Window Scaling
     QScreen* screen = QGuiApplication::primaryScreen();
     QRect screenGeometry = screen->geometry();
     resize(screenGeometry.width() * 0.8, screenGeometry.height() * 0.8);
     move((screenGeometry.width() - width()) / 2, (screenGeometry.height() - height()) / 2);
 
-    // ----- Connect video signals -----
+    // Connect video signals
     connect(videoPlayer, &VideoPlayer::playing, this, &PlayerWindow::showPlayingIcon);
     connect(videoPlayer, &VideoPlayer::stopped, this, &PlayerWindow::showStoppedIcon);
 
-    // ----- Single vs Double Click -----
+    // Single vs Double Click
     singleClickTimer = new QTimer(this);
     singleClickTimer->setSingleShot(true);
     singleClickTimer->setInterval(QApplication::doubleClickInterval());
@@ -169,14 +187,14 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     qDebug() << "Successfully opened Player";
 }
 
-// ----- Resize Event -----
+// Resize Event
 void PlayerWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
     if (layoutController) layoutController->handleResize();
 }
 
-// ----- Mouse Move Event -----
+// Mouse Move Event
 void PlayerWindow::mouseMoveEvent(QMouseEvent* event)
 {
     mouseY = event->pos().y();
@@ -184,7 +202,7 @@ void PlayerWindow::mouseMoveEvent(QMouseEvent* event)
     QMainWindow::mouseMoveEvent(event);
 }
 
-// ----- Event Filter -----
+// Event Filter
 bool PlayerWindow::eventFilter(QObject* obj, QEvent* event)
 {
     if (obj == videoPlayer)
@@ -195,7 +213,7 @@ bool PlayerWindow::eventFilter(QObject* obj, QEvent* event)
             if (e->button() == Qt::LeftButton)
             {
                 singleClickTimer->start();
-                return false; // let Qt see it
+                return false;
             }
         }
 
@@ -232,7 +250,7 @@ bool PlayerWindow::eventFilter(QObject* obj, QEvent* event)
     return QMainWindow::eventFilter(obj, event);
 }
 
-// ----- Fullscreen Change -----
+// Fullscreen Change
 void PlayerWindow::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::WindowStateChange) {
@@ -242,7 +260,7 @@ void PlayerWindow::changeEvent(QEvent* event)
     QMainWindow::changeEvent(event);
 }
 
-// ----- Play/Pause Icons -----
+// Play/Pause Icons
 void PlayerWindow::showPlayingIcon()
 {
     if (playingIcon && stoppedIcon) {
@@ -262,5 +280,16 @@ void PlayerWindow::showStoppedIcon()
         playingIcon->raise();
         stoppedIcon->raise();
         isVideoPlaying = false;
+    }
+}
+
+void PlayerWindow::updateVolumeSliderState(const QString& filePath)
+{
+    QDir dir(QCoreApplication::applicationDirPath());
+    dir.cdUp();
+    QString defaultFile = dir.filePath("Unselected.mp4");
+
+    if (volumeSlider) {
+        volumeSlider->setEnabled(filePath != defaultFile);
     }
 }

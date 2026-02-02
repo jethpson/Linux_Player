@@ -15,6 +15,8 @@ LayoutController::LayoutController(VideoPlayer* player,
                                    ClickableLabel* stopIcon,
                                    ClickableLabel* fIcon,
                                    ClickableLabel* bIcon,
+                                   ClickableLabel* volumeIcon,
+                                   ClickableLabel* volumeMuteIcon,
                                    QMenuBar* mb)
     : QObject(parent),
       videoPlayer(player),
@@ -25,6 +27,8 @@ LayoutController::LayoutController(VideoPlayer* player,
       stoppedIcon(stopIcon),
       forwardIcon(fIcon),
       backwardIcon(bIcon),
+      volumeIcon(volumeIcon),
+      volumeMuteIcon(volumeMuteIcon),
       menuBar(mb)
 {
     // Timers
@@ -128,7 +132,7 @@ void LayoutController::updatePositions()
         int pbHeight = progressBar->height();
         progressBar->setFixedWidth(vpWidth);
 
-        int offsetY = mouseNearBottom ? slideUpAmount-20 : -hiddenOffsetY; 
+        int offsetY = mouseNearBottom ? slideUpAmount + 15 : -hiddenOffsetY; 
         progressBar->move(0, vpHeight - pbHeight - offsetY);
 
         if (mouseNearBottom) progressBar->show();
@@ -137,9 +141,22 @@ void LayoutController::updatePositions()
 
     // Volume Slider
     if (volumeSlider) {
-        int sliderX = (vpWidth - volumeSlider->width()) / 2 + 190;
-        int sliderY = vpHeight - volumeSlider->height() - (mouseNearBottom ? slideUpAmount : -hiddenOffsetY);
+        int sliderX = (vpWidth - volumeSlider->width()) / 2 + 180;
+        int sliderY = vpHeight - volumeSlider->height() - (mouseNearBottom ? slideUpAmount - 20: -hiddenOffsetY);
         volumeSlider->move(sliderX, sliderY);
+    }
+
+    // Volume Icons
+    if (volumeIcon && volumeMuteIcon && volumeSlider)
+    {
+        int iconY = volumeSlider->y()
+                    + (volumeSlider->height() - volumeIcon->height() + 5) / 2;
+
+        int iconX = volumeSlider->x() - volumeIcon->width();
+
+        volumeIcon->move(iconX, iconY);
+        volumeMuteIcon->move(iconX, iconY);
+
     }
 
     // Icons
@@ -147,12 +164,12 @@ void LayoutController::updatePositions()
         int centerX = vpWidth / 2;
         int y       = vpHeight - playingIcon->height() - (mouseNearBottom ? slideUpAmount : -hiddenOffsetY);
 
-        playingIcon->move(centerX - playingIcon->width() / 2, y);
-        stoppedIcon->move(centerX - stoppedIcon->width() / 2, y);
+        playingIcon->move(centerX - playingIcon->width() / 2, y + 20);
+        stoppedIcon->move(centerX - stoppedIcon->width() / 2, y + 20);
 
-        int spacing = 25;
-        backwardIcon->move(centerX - backwardIcon->width() - spacing, y + (playingIcon->height() - backwardIcon->height()) / 2);
-        forwardIcon->move(centerX + playingIcon->width() - spacing - 5, y + (playingIcon->height() - forwardIcon->height()) / 2);
+        int spacing = 15;
+        backwardIcon->move(centerX - backwardIcon->width() - spacing, y + (playingIcon->height() - backwardIcon->height()) / 2 + 20);
+        forwardIcon->move(centerX + playingIcon->width() - spacing - 5, y + (playingIcon->height() - forwardIcon->height()) / 2 + 20);
     }
 }
 

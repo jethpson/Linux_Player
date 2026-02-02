@@ -24,6 +24,8 @@ public:
                      ClickableLabel* stoppedIcon,
                      ClickableLabel* forwardIcon,
                      ClickableLabel* backwardIcon,
+                     ClickableLabel* volumeIcon,
+                     ClickableLabel* volumeMuteIcon,
                      QMenuBar* menuBar);
 
     void handleResize();
@@ -42,6 +44,8 @@ private:
     ClickableLabel* stoppedIcon = nullptr;
     ClickableLabel* forwardIcon = nullptr;
     ClickableLabel* backwardIcon = nullptr;
+    ClickableLabel* volumeIcon = nullptr;
+    ClickableLabel* volumeMuteIcon = nullptr;
     QMenuBar* menuBar = nullptr;
 
     QTimer* menuHideTimer = nullptr;

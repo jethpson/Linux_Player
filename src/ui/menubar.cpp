@@ -62,6 +62,14 @@ void MenuBarController::setupShortcuts()
         if (window->isFullScreen()) window->showNormal();
     });
 
+    new QShortcut(Qt::Key_Right, window, [this]() {
+        if(videoPlayer) videoPlayer->seekForward(5000);
+    });
+
+    new QShortcut(Qt::Key_Left, window, [this]() {
+        if(videoPlayer) videoPlayer->seekBackward(5000);
+    });
+
     new QShortcut(Qt::Key_Space, window, [this]() {
         if (videoPlayer->isPlaying()) {
             videoPlayer->pause();
@@ -73,3 +81,4 @@ void MenuBarController::setupShortcuts()
         }
     });
 }
+

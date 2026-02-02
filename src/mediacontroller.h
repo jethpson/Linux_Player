@@ -17,6 +17,7 @@ class PlayerWindow : public QMainWindow
 
 public:
     explicit PlayerWindow(QWidget* parent = nullptr);
+    void updateVolumeSliderState(const QString& filePath);
     ~PlayerWindow() = default;
 
 signals:
@@ -40,6 +41,8 @@ private:
     ClickableLabel* stoppedIcon = nullptr;
     ClickableLabel* forwardIcon = nullptr;
     ClickableLabel* backwardIcon = nullptr;
+    ClickableLabel* volumeIcon = nullptr;
+    ClickableLabel* volumeMuteIcon = nullptr;
 
     MenuBarController* menuController = nullptr;
     VolumeSliderController* volumeController = nullptr;
@@ -50,4 +53,5 @@ private:
     QTimer* singleClickTimer = nullptr;
     bool isVideoPlaying = false;
     int mouseY = 0;
+    
 };
