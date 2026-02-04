@@ -28,10 +28,13 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
     void changeEvent(QEvent* event) override;
+    QString msToTimeString(int ms);
 
 private slots:
     void showPlayingIcon();
     void showStoppedIcon();
+    void showloopSolidIcon();
+    void showloopHollowIcon();
 
 private:
     VideoPlayer* videoPlayer = nullptr;
@@ -43,14 +46,18 @@ private:
     ClickableLabel* backwardIcon = nullptr;
     ClickableLabel* volumeIcon = nullptr;
     ClickableLabel* volumeMuteIcon = nullptr;
+    ClickableLabel* loopSIcon = nullptr;
+    ClickableLabel* loopHIcon = nullptr;
 
     MenuBarController* menuController = nullptr;
     VolumeSliderController* volumeController = nullptr;
     IconController* iconController = nullptr;
     LayoutController* layoutController = nullptr;
+    
 
     QTimer* menuHideTimer = nullptr;
     QTimer* singleClickTimer = nullptr;
+    QLabel* timeLabel = nullptr;
     bool isVideoPlaying = false;
     int mouseY = 0;
     

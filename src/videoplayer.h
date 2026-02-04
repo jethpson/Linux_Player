@@ -45,6 +45,8 @@ public:
     void setLoop(bool loop) { loopEnabled = loop; }
     bool isPlaying() const { return playingState; }
     QString getCurrentFile() const { return currentFile; }
+    int getCurrentTime() const;
+    int getDuration() const;
     libvlc_media_player_t* getMediaPlayer() const { return mediaPlayer; }
 
 

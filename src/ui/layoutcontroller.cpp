@@ -2,6 +2,8 @@
 #include "videoplayer.h"
 #include "videoprogressbar.h"
 #include "clickablelabel.h"
+
+#include <QLabel>
 #include <QApplication>
 #include <QTimer>
 #include <QResizeEvent>
@@ -17,6 +19,9 @@ LayoutController::LayoutController(VideoPlayer* player,
                                    ClickableLabel* bIcon,
                                    ClickableLabel* volumeIcon,
                                    ClickableLabel* volumeMuteIcon,
+                                   ClickableLabel* loopSIcon,
+                                   ClickableLabel* loopHIcon,
+                                   QLabel* timeLabel,
                                    QMenuBar* mb)
     : QObject(parent),
       videoPlayer(player),
@@ -29,6 +34,9 @@ LayoutController::LayoutController(VideoPlayer* player,
       backwardIcon(bIcon),
       volumeIcon(volumeIcon),
       volumeMuteIcon(volumeMuteIcon),
+      loopSIcon(loopSIcon),
+      loopHIcon(loopHIcon),
+      timeLabel(timeLabel),
       menuBar(mb)
 {
     // Timers
@@ -160,7 +168,7 @@ void LayoutController::updatePositions()
     }
 
     // Icons
-    if (playingIcon && stoppedIcon && forwardIcon && backwardIcon) {
+    if (playingIcon && stoppedIcon && forwardIcon && backwardIcon && loopSIcon && loopHIcon) {
         int centerX = vpWidth / 2;
         int y       = vpHeight - playingIcon->height() - (mouseNearBottom ? slideUpAmount : -hiddenOffsetY);
 
@@ -170,6 +178,11 @@ void LayoutController::updatePositions()
         int spacing = 15;
         backwardIcon->move(centerX - backwardIcon->width() - spacing, y + (playingIcon->height() - backwardIcon->height()) / 2 + 20);
         forwardIcon->move(centerX + playingIcon->width() - spacing - 5, y + (playingIcon->height() - forwardIcon->height()) / 2 + 20);
+
+        loopSIcon->move(centerX - loopSIcon->width() / 2 - 65, y + 20);
+        loopHIcon->move(centerX - loopHIcon->width() / 2 - 65, y + 20);
+
+        timeLabel->move(centerX - loopHIcon->width() / 2 - 230, y + 20);
     }
 }
 

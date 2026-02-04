@@ -226,27 +226,25 @@ void VideoPlayer::setupEndReachedHandler()
 
     libvlc_event_manager_t* em = libvlc_media_player_event_manager(mediaPlayer);
     libvlc_event_attach(em, libvlc_MediaPlayerEndReached,
-        [](const libvlc_event_t* /*event*/, void* userData) {
-            VideoPlayer* player = static_cast<VideoPlayer*>(userData);
-            if (!player || !player->mediaPlayer) return;
+    [](const libvlc_event_t* /*event*/, void* userData) {
+        VideoPlayer* player = static_cast<VideoPlayer*>(userData);
+        if (!player || !player->mediaPlayer) return;
 
+        QMetaObject::invokeMethod(player, [player]() {
             if (player->loopEnabled) {
-                // Use Qt event loop to safely restart playback
-                QMetaObject::invokeMethod(player, [player]() {
-                    qDebug() << "[VideoPlayer] Looping video";
-
-                    // Stop first to reset video properly
-                    libvlc_media_player_stop(player->mediaPlayer);
-
-                    // tiny delay to ensure video output is ready
-                    QTimer::singleShot(50, [player]() {
-                        libvlc_media_player_set_position(player->mediaPlayer, 0.0);
-                        libvlc_media_player_play(player->mediaPlayer);
-                        emit player->playing();
-                    });
-                }, Qt::QueuedConnection);
+                qDebug() << "[VideoPlayer] Looping video";
+                libvlc_media_player_stop(player->mediaPlayer);
+                QTimer::singleShot(50, [player]() {
+                    libvlc_media_player_set_position(player->mediaPlayer, 0.0);
+                    libvlc_media_player_play(player->mediaPlayer);
+                    emit player->playing();
+                });
+            } else {
+                qDebug() << "[VideoPlayer] Video ended";
+                emit player->stopped();
             }
-        }, this);
+        }, Qt::QueuedConnection);
+    }, this);
 }
 
 void VideoPlayer::setVolume(int value)
@@ -265,4 +263,16 @@ void VideoPlayer::mouseDoubleClickEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) emit doubleClicked();
     QWidget::mouseDoubleClickEvent(event);
+}
+
+int VideoPlayer::getCurrentTime() const
+{
+    if (!mediaPlayer) return 0;
+    return static_cast<int>(libvlc_media_player_get_time(mediaPlayer));
+}
+
+int VideoPlayer::getDuration() const
+{
+    if (!mediaPlayer) return 0;
+    return static_cast<int>(libvlc_media_player_get_length(mediaPlayer));
 }

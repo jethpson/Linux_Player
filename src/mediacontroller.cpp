@@ -7,6 +7,7 @@
 #include "volumeslider.h"
 #include "iconcontroller.h"
 
+#include <QLabel>
 #include <QApplication>
 #include <QDir>
 #include <QMenuBar>
@@ -21,6 +22,7 @@
 #include <QTimer>
 #include <QDebug>
 #include <QCoreApplication>
+#include <QGraphicsDropShadowEffect>
  
 PlayerWindow::PlayerWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -36,9 +38,6 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     videoPlayer->setAttribute(Qt::WA_TranslucentBackground, true);
     videoPlayer->setAutoFillBackground(false);
     videoPlayer->setLoop(true);
-
-    // Menu & Shortcuts
-    menuController = new MenuBarController(this, videoPlayer, this);
 
     // Volume Slider
     volumeSlider = new QSlider(Qt::Horizontal, this);
@@ -76,6 +75,9 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     volumeController = new VolumeSliderController(videoPlayer, this);
     volumeController->setSlider(volumeSlider);
 
+    // Menu & Shortcuts
+    menuController = new MenuBarController(this, videoPlayer, volumeController, this);
+
     // Icons
     iconController = new IconController(videoPlayer, this, volumeController);
     playingIcon = iconController->getPlayingIcon();
@@ -84,6 +86,8 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     backwardIcon = iconController->getBackwardIcon();
     volumeIcon = iconController->getVolumeIcon();
     volumeMuteIcon = iconController->getVolumeMuteIcon();
+    loopSIcon = iconController->getLoopSIcon();
+    loopHIcon = iconController->getLoopHIcon();
     
 
     // Container Layout
@@ -91,6 +95,39 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     container->setContentsMargins(0,0,0,0);
     container->setAttribute(Qt::WA_StyledBackground, true);
     setCentralWidget(container);
+
+
+    // Time bar
+    timeLabel = new QLabel("0:00 – 0:00", this);
+    timeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    timeLabel->setContentsMargins(0, 0, 10, 0);
+    QFont f("Arial", 14, QFont::Bold);
+    timeLabel->setFont(f);
+    timeLabel->setFixedWidth(170);
+    timeLabel->setStyleSheet("color: black; font-weight: bold;");
+    QGraphicsDropShadowEffect* effect = new QGraphicsDropShadowEffect;
+    effect->setBlurRadius(2);
+    effect->setColor(Qt::gray);
+    effect->setOffset(0, 0);
+    timeLabel->setGraphicsEffect(effect);
+    timeLabel->setFixedHeight(35);
+
+    timeLabel->show();
+
+    QTimer* timeUpdateTimer = new QTimer(this);
+    connect(timeUpdateTimer, &QTimer::timeout, this, [this]() {
+        if (!videoPlayer) return;
+
+        int currMs = videoPlayer->getCurrentTime();
+        int totalMs = videoPlayer->getDuration();
+
+        QString text = QString("%1 – %2")
+                        .arg(msToTimeString(currMs))
+                        .arg(msToTimeString(totalMs));
+
+        timeLabel->setText(text);
+    });
+    timeUpdateTimer->start(200);
 
     // Set parents
     videoPlayer->setParent(container);
@@ -102,6 +139,9 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     backwardIcon->setParent(container);
     volumeIcon->setParent(container);
     volumeMuteIcon->setParent(container);
+    loopSIcon->setParent(container);
+    loopHIcon->setParent(container);
+    timeLabel->setParent(container);
 
     // Let LayoutController handle all positioning
     layoutController = new LayoutController(
@@ -110,6 +150,7 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         playingIcon, stoppedIcon,
         forwardIcon, backwardIcon, 
         volumeIcon, volumeMuteIcon,
+        loopSIcon, loopHIcon, timeLabel,
         this->menuBar()
     );
 
@@ -129,15 +170,13 @@ PlayerWindow::PlayerWindow(QWidget* parent)
     progressBar->show();
 
     // Icons overlay
-    playingIcon->setParent(container);
-    stoppedIcon->setParent(container);
-    forwardIcon->setParent(container);
-    backwardIcon->setParent(container);
-
     playingIcon->raise();
     stoppedIcon->raise();
     forwardIcon->raise();
     backwardIcon->raise();
+    loopSIcon->raise();
+    loopHIcon->raise();
+    timeLabel->raise();
 
     // Layout Controller
     layoutController = new LayoutController(
@@ -146,6 +185,7 @@ PlayerWindow::PlayerWindow(QWidget* parent)
         playingIcon, stoppedIcon,
         forwardIcon, backwardIcon,
         volumeIcon, volumeMuteIcon,
+        loopSIcon, loopHIcon, timeLabel,
         this->menuBar()
     );
 
@@ -283,6 +323,30 @@ void PlayerWindow::showStoppedIcon()
     }
 }
 
+void PlayerWindow::showloopSolidIcon()
+{
+
+    if (loopSIcon && loopHIcon) {
+        loopSIcon->setVisible(true);
+        loopHIcon->setVisible(false);
+        loopSIcon->raise();
+        loopHIcon->raise();
+        videoPlayer->setLoop(true);
+    }
+}
+
+void PlayerWindow::showloopHollowIcon()
+{
+
+    if (loopSIcon && loopHIcon) {
+        loopSIcon->setVisible(false);
+        loopHIcon->setVisible(true);
+        loopSIcon->raise();
+        loopHIcon->raise();
+        videoPlayer->setLoop(false);
+    }
+}
+
 void PlayerWindow::updateVolumeSliderState(const QString& filePath)
 {
     QDir dir(QCoreApplication::applicationDirPath());
@@ -292,4 +356,12 @@ void PlayerWindow::updateVolumeSliderState(const QString& filePath)
     if (volumeSlider) {
         volumeSlider->setEnabled(filePath != defaultFile);
     }
+}
+
+QString PlayerWindow::msToTimeString(int ms)
+{
+    int totalSec = ms / 1000;
+    int minutes = totalSec / 60;
+    int seconds = totalSec % 60;
+    return QString("%1:%2").arg(minutes).arg(seconds, 2, 10, QChar('0'));
 }

@@ -1,5 +1,7 @@
 #include "menubar.h"
 #include "videoplayer.h"
+#include "iconcontroller.h"
+#include "volumeslider.h"
 
 #include <QMainWindow>
 #include <QMenuBar>
@@ -7,8 +9,8 @@
 #include <QShortcut>
 #include <QDebug>
 
-MenuBarController::MenuBarController(QMainWindow* w, VideoPlayer* player, QObject* parent)
-    : QObject(parent), window(w), videoPlayer(player)
+MenuBarController::MenuBarController(QMainWindow* w, VideoPlayer* player, VolumeSliderController* vc, QObject* parent)
+    : QObject(parent), window(w), videoPlayer(player), volumeController(vc)
 {
     setupMenuBar();
     setupShortcuts();
@@ -68,6 +70,13 @@ void MenuBarController::setupShortcuts()
 
     new QShortcut(Qt::Key_Left, window, [this]() {
         if(videoPlayer) videoPlayer->seekBackward(5000);
+    });
+
+    new QShortcut(Qt::Key_M, window, [this]() {
+        if(volumeController)
+        {
+            volumeController->toggleMute();
+        }
     });
 
     new QShortcut(Qt::Key_Space, window, [this]() {

@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QWidget>
 #include <QTimer>
+#include <QLabel>
 #include <QMenuBar>
 #include <QMouseEvent>
 
@@ -26,6 +27,9 @@ public:
                      ClickableLabel* backwardIcon,
                      ClickableLabel* volumeIcon,
                      ClickableLabel* volumeMuteIcon,
+                     ClickableLabel* loopSIcon,
+                     ClickableLabel* loopHIcon,
+                     QLabel* timeLabel,
                      QMenuBar* menuBar);
 
     void handleResize();
@@ -46,7 +50,10 @@ private:
     ClickableLabel* backwardIcon = nullptr;
     ClickableLabel* volumeIcon = nullptr;
     ClickableLabel* volumeMuteIcon = nullptr;
+    ClickableLabel* loopSIcon = nullptr;
+    ClickableLabel* loopHIcon = nullptr;
     QMenuBar* menuBar = nullptr;
+    QLabel* timeLabel = nullptr;
 
     QTimer* menuHideTimer = nullptr;
     QTimer* singleClickTimer = nullptr;

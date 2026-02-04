@@ -3,12 +3,13 @@
 
 class QMainWindow;
 class VideoPlayer;
+class VolumeSliderController;
 
 class MenuBarController : public QObject
 {
     Q_OBJECT
 public:
-    explicit MenuBarController(QMainWindow* window, VideoPlayer* player, QObject* parent = nullptr);
+    explicit MenuBarController(QMainWindow* w, VideoPlayer* player, VolumeSliderController* vc, QObject* parent = nullptr);
 
 private:
     QMainWindow* window;
@@ -16,4 +17,6 @@ private:
 
     void setupMenuBar();
     void setupShortcuts();
+
+    VolumeSliderController* volumeController;
 };

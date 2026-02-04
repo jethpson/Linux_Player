@@ -21,6 +21,8 @@ public:
     ClickableLabel* getBackwardIcon() const { return backwardIcon; }
     ClickableLabel* getVolumeIcon() const { return volumeIcon; }
     ClickableLabel* getVolumeMuteIcon() const { return volumeMuteIcon; }
+    ClickableLabel* getLoopSIcon() const { return loopSIcon; }
+    ClickableLabel* getLoopHIcon() const { return loopHIcon; }
 
 private:
     VideoPlayer* videoPlayer = nullptr;
@@ -32,6 +34,9 @@ private:
     ClickableLabel* backwardIcon = nullptr;
     ClickableLabel* volumeIcon  = nullptr;
     ClickableLabel* volumeMuteIcon  = nullptr;
+    ClickableLabel* loopSIcon  = nullptr;
+    ClickableLabel* loopHIcon  = nullptr;
+
 
     VolumeSliderController* volumeController;
 
