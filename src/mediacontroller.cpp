@@ -64,12 +64,15 @@ PlayerWindow::PlayerWindow(QWidget* parent)
                 dir.cdUp();
                 QString DefaultVid = dir.filePath("Unselected.mp4");
 
-            if (videoPlayer->getCurrentFile() == DefaultVid)
-                volumeSlider->setEnabled(false);
-            else
-                volumeSlider->setEnabled(true);
+                if (videoPlayer->getCurrentFile() == DefaultVid)
+                    volumeSlider->setEnabled(false);
+                else if (!volumeController->getIsMuted())
+                    volumeSlider->setEnabled(true);
+                else
+                    videoPlayer->setVolume(0);
         }
     });
+
 
     // Volume slider overlay
     volumeController = new VolumeSliderController(videoPlayer, this);

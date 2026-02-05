@@ -2,7 +2,9 @@
 
 #include <QWidget>
 #include <QLabel>
+#include <QSlider>
 #include <QPixmap>
+#include <QPointer>
 
 class VideoPlayer;
 class ClickableLabel;
@@ -27,6 +29,7 @@ public:
 private:
     VideoPlayer* videoPlayer = nullptr;
     QWidget* parentWidget = nullptr;
+    QPointer<QSlider> volumeSlider;
 
     ClickableLabel* playingIcon = nullptr;
     ClickableLabel* stoppedIcon = nullptr;

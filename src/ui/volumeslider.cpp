@@ -55,6 +55,14 @@ void VolumeSliderController::toggleMute()
     updateIcon();
 }
 
+void VolumeSliderController::setSliderEnabled(bool enabled)
+{
+    if (!volumeSlider)
+        return;
+
+    volumeSlider->setEnabled(enabled);
+}
+
 
 void VolumeSliderController::updateIcon()
 {

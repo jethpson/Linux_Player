@@ -14,6 +14,8 @@ public:
     
     void updateIcon();
     int getLastVolume() const { return lastVolume; }
+    bool getIsMuted() const { return isMuted; }
+    void setSliderEnabled(bool enabled);
     void setSliderValue(int value)
     {
         if (volumeSlider)
@@ -27,10 +29,10 @@ public:
 
     ClickableLabel* volumeIcon = nullptr;
     ClickableLabel* volumeMuteIcon = nullptr;
+    QSlider* volumeSlider = nullptr;
 
 private:
     VideoPlayer* videoPlayer = nullptr;
-    QSlider* volumeSlider = nullptr;
     int lastVolume = 50;
     bool isMuted = false;
 };

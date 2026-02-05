@@ -107,11 +107,11 @@ void IconController::setupConnections()
     });
 
     connect(volumeIcon, &ClickableLabel::clicked, this, [this]() {
-        if(volumeController && !videoPlayer->getCurrentFile().endsWith("Unselected.mp4")) volumeController->toggleMute();
+        if(volumeController && !videoPlayer->getCurrentFile().endsWith("Unselected.mp4")) { volumeController->toggleMute(); volumeController->setSliderEnabled(false);} 
     });
 
     connect(volumeMuteIcon, &ClickableLabel::clicked, this, [this]() {
-        if(volumeController && !videoPlayer->getCurrentFile().endsWith("Unselected.mp4")) volumeController->toggleMute();
+        if(volumeController && !videoPlayer->getCurrentFile().endsWith("Unselected.mp4")) { volumeController->toggleMute(); volumeController->setSliderEnabled(true);}
     });
 
     connect(loopSIcon, &ClickableLabel::clicked, this, [this]() {
