@@ -1,80 +1,68 @@
 #pragma once
 
 #include <QWidget>
-#include <QResizeEvent>
-#include <QShowEvent>
+#include <QString>
 #include <QThread>
 #include <vlc/vlc.h>
-#include <QUrl>
-
-class VLCLoadWorker : public QObject
-{
-    Q_OBJECT
-public:
-    VLCLoadWorker(const QString& file, libvlc_instance_t* instance)
-        : filePath(file), vlcInstance(instance) {}
-
-
-
-public slots:
-    void process();
-
-signals:
-    void finished(libvlc_media_player_t* player);
-
-private:
-    QString filePath;
-    libvlc_instance_t* vlcInstance;
-};
 
 class VideoPlayer : public QWidget
 {
     Q_OBJECT
-
 public:
-    explicit VideoPlayer(const QString &filePath, QWidget *parent = nullptr);
+    explicit VideoPlayer(QWidget* parent = nullptr);
+    VideoPlayer(const QString& filePath, QWidget* parent = nullptr);
     ~VideoPlayer();
 
+    void loadFile(const QString& filePath);
     void play();
     void pause();
     void stop();
-    void loadFile(const QString& filePath);
+    bool isPlaying() const;
+
     void seekForward(int ms);
     void seekBackward(int ms);
     void setVolume(int value);
-    void setLoop(bool loop) { loopEnabled = loop; }
-    bool isPlaying() const { return playingState; }
-    QString getCurrentFile() const { return currentFile; }
+    void setLoop(bool enabled);
+    void setPositionMs(int timeMs);
+
     int getCurrentTime() const;
     int getDuration() const;
-    libvlc_media_player_t* getMediaPlayer() const { return mediaPlayer; }
-
+    libvlc_media_player_t* getMediaPlayer() const;
+    QString getCurrentFile() const { return m_currentFile; }
 
 signals:
     void playing();
     void stopped();
+    void mediaReady();
     void clicked();
     void doubleClicked();
-    void mediaReady();
+    void videoLoaded(const QString& filePath);
+    void videoPositionChanged(int timeMs);
+    
 
 protected:
-    void resizeEvent(QResizeEvent* event) override;
-    void showEvent(QShowEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
-    
+    void resizeEvent(QResizeEvent*) override;
+    void showEvent(QShowEvent*) override;
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseDoubleClickEvent(QMouseEvent*) override;
+
 private:
+    void setupEndReachedHandler();
+    void updateVideoSize();
+    bool isPhoneResolution(int videoWidth, int videoHeight);
+    void attachVLC();
+
     libvlc_instance_t* vlcInstance = nullptr;
     libvlc_media_player_t* mediaPlayer = nullptr;
-    bool vlcSet = false;
-    bool loopEnabled = false;
-    bool playingState = false;
-    bool isLoading = false;
-    QString currentFile;
-    QString pendingFile;
+
+    QString m_currentFile;
 
     QThread* loaderThread = nullptr;
 
-    void setupEndReachedHandler();
-    void updateVideoSize();
+    QString currentPath;
+    QString pendingFile;
+
+    bool vlcSet = false;
+    bool loopEnabled = false;
+    bool isLoading = false;
 };

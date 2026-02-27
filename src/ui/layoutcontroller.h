@@ -29,6 +29,8 @@ public:
                      ClickableLabel* volumeMuteIcon,
                      ClickableLabel* loopSIcon,
                      ClickableLabel* loopHIcon,
+                     ClickableLabel* spacerLIcon,
+                     ClickableLabel* spacerRIcon,
                      QLabel* timeLabel,
                      QMenuBar* menuBar);
 
@@ -36,6 +38,7 @@ public:
     void handleMouseMove(int mouseY);
     void handleFullScreenChange(bool fullScreen);
     void updatePositions();
+    
 
     void handleClick();
 
@@ -52,6 +55,8 @@ private:
     ClickableLabel* volumeMuteIcon = nullptr;
     ClickableLabel* loopSIcon = nullptr;
     ClickableLabel* loopHIcon = nullptr;
+    ClickableLabel* spacerLIcon = nullptr;
+    ClickableLabel* spacerRIcon = nullptr;
     QMenuBar* menuBar = nullptr;
     QLabel* timeLabel = nullptr;
 
@@ -62,4 +67,7 @@ private:
 
     void showMenu();
     void hideMenu();
+
+    QTimer* cursorHideTimer = nullptr;
+    static constexpr int CURSOR_IDLE_MS = 2000;
 };

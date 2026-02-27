@@ -14,7 +14,7 @@ void VolumeSliderController::setSlider(QSlider* slider)
     volumeSlider = slider;
     if(volumeSlider)
     {
-        // Connect the existing slider to update video volume and icons
+
         connect(volumeSlider, &QSlider::valueChanged, this, [this](int value){
             if(!videoPlayer) return;
 

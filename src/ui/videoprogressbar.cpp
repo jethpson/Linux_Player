@@ -9,29 +9,25 @@
 VideoProgressBar::VideoProgressBar(libvlc_media_player_t* player, QWidget* parent)
     : QWidget(parent), mediaPlayer(player)
 {
-    setFixedHeight(20); // height fixed
+    setFixedHeight(20);
 
     slider = new QSlider(Qt::Horizontal, this);
     slider->setRange(0, 1000);
     slider->setSingleStep(1);
     slider->setPageStep(10);
 
-    // Layout for automatic scaling
     QHBoxLayout* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(slider);
 
-    // Timer to update slider from VLC
     updateTimer = new QTimer(this);
     updateTimer->setInterval(200);
     connect(updateTimer, &QTimer::timeout, this, &VideoProgressBar::updateSlider);
     updateTimer->start();
 
-    // Handle dragging the handle
     connect(slider, &QSlider::sliderPressed, this, &VideoProgressBar::sliderPressed);
     connect(slider, &QSlider::sliderReleased, this, &VideoProgressBar::sliderReleased);
 
-    // Handle clicks anywhere on the slider
     slider->installEventFilter(this);
 }
 
@@ -43,7 +39,6 @@ bool VideoProgressBar::eventFilter(QObject* obj, QEvent* event)
         if (mouseEvent->button() == Qt::LeftButton && mediaPlayer)
         {
 
-            // Prepare style option to get the handle rect
             QStyleOptionSlider opt;
             opt.initFrom(slider);
             opt.orientation = slider->orientation();
@@ -53,7 +48,6 @@ bool VideoProgressBar::eventFilter(QObject* obj, QEvent* event)
             opt.sliderValue = slider->value();
             opt.pageStep = slider->pageStep();
 
-            // Check if click is on the handle
             QRect handleRect = slider->style()->subControlRect(
                 QStyle::CC_Slider,
                 &opt,
@@ -61,10 +55,9 @@ bool VideoProgressBar::eventFilter(QObject* obj, QEvent* event)
                 slider
             );
 
-            // If the click is NOT on the handle, treat as click-to-seek
             if (!handleRect.contains(mouseEvent->position().toPoint()))
             {
-                isSeeking = true; // block updateSlider temporarily
+                isSeeking = true;
 
                 int newValue = slider->style()->sliderValueFromPosition(
                     slider->minimum(),
@@ -80,9 +73,8 @@ bool VideoProgressBar::eventFilter(QObject* obj, QEvent* event)
                 emit seekRequested(newTime);
 
                 isSeeking = false;
-                return true; // event handled
+                return true;
             }
-            // else: click is on handle, let normal dragging happen
         }
     }
     return QWidget::eventFilter(obj, event);

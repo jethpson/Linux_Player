@@ -9,7 +9,7 @@ class VolumeSliderController : public QObject
 {
     Q_OBJECT
 public:
-    // Constructor: do not create a slider here
+
     explicit VolumeSliderController(VideoPlayer* player, QWidget* parent = nullptr);
     
     void updateIcon();
@@ -22,7 +22,6 @@ public:
             volumeSlider->setValue(value);
     }
 
-    // Link an existing slider to this controller
     void setSlider(QSlider* slider);
 
     void toggleMute();

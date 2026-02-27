@@ -30,6 +30,7 @@ void IconController::setupIcons()
     QPixmap volumeMutePix(workspacePath + "volume.png");
     QPixmap loopSPix(workspacePath + "loopSolid.png");
     QPixmap loopHPix(workspacePath + "loopHollow.png");
+    QPixmap spacer(workspacePath + "spacer.png");
 
     playingIcon = new ClickableLabel(parentWidget);
     stoppedIcon = new ClickableLabel(parentWidget);
@@ -39,6 +40,9 @@ void IconController::setupIcons()
     volumeMuteIcon = new ClickableLabel(parentWidget);
     loopSIcon = new ClickableLabel(parentWidget);
     loopHIcon = new ClickableLabel(parentWidget);
+    spacerLIcon = new ClickableLabel(parentWidget);
+    spacerRIcon = new ClickableLabel(parentWidget);
+
 
     playingIcon->setPixmap(playPix.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     stoppedIcon->setPixmap(stopPix.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -48,6 +52,8 @@ void IconController::setupIcons()
     volumeMuteIcon->setPixmap(volumeMutePix.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     loopSIcon->setPixmap(loopSPix.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     loopHIcon->setPixmap(loopHPix.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    spacerLIcon->setPixmap(spacer.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    spacerRIcon->setPixmap(spacer.scaled(35, 35, Qt::KeepAspectRatio, Qt::SmoothTransformation));
 
     playingIcon->setFixedSize(35, 35);
     stoppedIcon->setFixedSize(35, 35);
@@ -57,6 +63,8 @@ void IconController::setupIcons()
     volumeMuteIcon->setFixedSize(35, 35);
     loopSIcon->setFixedSize(35, 35);
     loopHIcon->setFixedSize(35, 35);
+    spacerLIcon->setFixedSize(35, 35);
+    spacerRIcon->setFixedSize(35, 35);
 
     playingIcon->setStyleSheet("background: transparent; border: none;");
     stoppedIcon->setStyleSheet("background: transparent; border: none;");
@@ -66,6 +74,8 @@ void IconController::setupIcons()
     volumeMuteIcon->setStyleSheet("background: transparent; border: none;");
     loopSIcon->setStyleSheet("background: transparent; border: none;");
     loopHIcon->setStyleSheet("background: transparent; border: none;");
+    spacerLIcon->setStyleSheet("background: transparent; border: none;");
+    spacerRIcon->setStyleSheet("background: transparent; border: none;");
 
     playingIcon->show();
     stoppedIcon->hide();
@@ -75,6 +85,9 @@ void IconController::setupIcons()
     volumeMuteIcon->hide();
     loopSIcon->show();
     loopHIcon->hide();
+    spacerLIcon->show();
+    spacerRIcon->show();
+
 
     playingIcon->raise();
     stoppedIcon->raise();
@@ -84,6 +97,8 @@ void IconController::setupIcons()
     volumeMuteIcon->raise();
     loopSIcon->raise();
     loopHIcon->raise();
+    spacerLIcon->raise();
+    spacerRIcon->raise();
 }
 
 void IconController::setupConnections()
@@ -123,4 +138,8 @@ void IconController::setupConnections()
         videoPlayer->setLoop(true);
         QMetaObject::invokeMethod(parentWidget, "showloopSolidIcon");
     });
+
+    connect(spacerLIcon, &ClickableLabel::clicked, this, [this]() {});
+
+    connect(spacerRIcon, &ClickableLabel::clicked, this, [this]() {});
 }

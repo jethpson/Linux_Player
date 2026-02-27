@@ -2,14 +2,16 @@
 #include <QScreen>
 #include <iostream>
 #include <QDebug>
+#include <cstdlib>
 #include "mediacontroller.h"
 #include "videoplayer.h"
-
 
 int main(int argc, char *argv[])
 {
 
     std::cout << "Launching" << std::endl;
+
+    qputenv("QT_LOGGING_RULES", "qt.gui.imageio.*=false");
 
     QApplication app(argc, argv);
 

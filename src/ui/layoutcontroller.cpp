@@ -21,6 +21,8 @@ LayoutController::LayoutController(VideoPlayer* player,
                                    ClickableLabel* volumeMuteIcon,
                                    ClickableLabel* loopSIcon,
                                    ClickableLabel* loopHIcon,
+                                   ClickableLabel* spacerLIcon,
+                                   ClickableLabel* spacerRIcon,
                                    QLabel* timeLabel,
                                    QMenuBar* mb)
     : QObject(parent),
@@ -36,6 +38,8 @@ LayoutController::LayoutController(VideoPlayer* player,
       volumeMuteIcon(volumeMuteIcon),
       loopSIcon(loopSIcon),
       loopHIcon(loopHIcon),
+      spacerLIcon(spacerLIcon),
+      spacerRIcon(spacerRIcon),
       timeLabel(timeLabel),
       menuBar(mb)
 {
@@ -47,6 +51,24 @@ LayoutController::LayoutController(VideoPlayer* player,
     singleClickTimer = new QTimer(this);
     singleClickTimer->setSingleShot(true);
     singleClickTimer->setInterval(QApplication::doubleClickInterval());
+
+    connect(singleClickTimer, &QTimer::timeout, this, [this]() {
+        if (!videoPlayer)
+            return;
+
+        videoPlayer->isPlaying()
+            ? videoPlayer->pause()
+            : videoPlayer->play();
+    });
+
+    cursorHideTimer = new QTimer(this);
+    cursorHideTimer->setSingleShot(true);
+    cursorHideTimer->setInterval(CURSOR_IDLE_MS);
+
+    connect(cursorHideTimer, &QTimer::timeout, this, [this]() {
+        if (parentWidget->window()->isFullScreen())
+            videoPlayer->setCursor(Qt::BlankCursor);
+    });
 }
 
 // Called from PlayerWindow::resizeEvent
@@ -58,17 +80,20 @@ void LayoutController::handleResize()
 // Called from PlayerWindow::mouseMoveEvent
 void LayoutController::handleMouseMove(int y)
 {
+    videoPlayer->unsetCursor();
+    cursorHideTimer->start();
+
     mouseY = y;
 
     if (!menuBar) return;
 
-    if (parentWidget->isFullScreen()) {
+    if (parentWidget->window()->isFullScreen()) {
         if (y <= 30) {
             
             showMenu();
             menuHideTimer->stop();
         } else {
-            
+
             if (!menuHideTimer->isActive())
                 menuHideTimer->start();
             else {
@@ -103,14 +128,17 @@ void LayoutController::handleClick()
     if (singleClickTimer->isActive()) {
         // Double click
         singleClickTimer->stop();
-        if (parentWidget->isFullScreen()) parentWidget->showNormal();
-        else parentWidget->showFullScreen();
+        if (parentWidget->window()->isFullScreen()) parentWidget->window()->showNormal();
+        else parentWidget->window()->showFullScreen();
     } else {
         // Start timer for single click
         singleClickTimer->start();
     }
 }
 
+// -------------------------------------------------
+// Icon positions
+// -------------------------------------------------
 void LayoutController::updatePositions()
 {
     if (!videoPlayer || !parentWidget) return;
@@ -127,8 +155,8 @@ void LayoutController::updatePositions()
         int slideUpAmount = 0;
         int hiddenOffsetY = 0;
 
-    if (!parentWidget->isFullScreen()){
-        slideUpAmount = 50;
+    if (!parentWidget->window()->isFullScreen()){
+        slideUpAmount = 20;
         hiddenOffsetY = 600;
     } else {
         slideUpAmount = 20;
@@ -167,9 +195,10 @@ void LayoutController::updatePositions()
 
     }
 
-    // Icons
-    if (playingIcon && stoppedIcon && forwardIcon && backwardIcon && loopSIcon && loopHIcon) {
+    // Icons    
+    if (playingIcon && stoppedIcon && forwardIcon && backwardIcon && loopSIcon && loopHIcon && spacerLIcon && spacerRIcon) {
         int centerX = vpWidth / 2;
+
         int y       = vpHeight - playingIcon->height() - (mouseNearBottom ? slideUpAmount : -hiddenOffsetY);
 
         playingIcon->move(centerX - playingIcon->width() / 2, y + 20);
@@ -182,11 +211,29 @@ void LayoutController::updatePositions()
         loopSIcon->move(centerX - loopSIcon->width() / 2 - 65, y + 20);
         loopHIcon->move(centerX - loopHIcon->width() / 2 - 65, y + 20);
 
+        if (spacerLIcon) {
+            int timeLabelX = timeLabel->x();
+            int spacerWidth = timeLabelX;
+
+            spacerLIcon->setFixedWidth(qMax(spacerWidth, 0));  
+            spacerLIcon->move(0, y + 20);
+        }
+
+        if (spacerRIcon && volumeSlider) {
+            int volumeSliderRightX = volumeSlider->x() + volumeSlider->width();
+            int spacerWidth = vpWidth - volumeSliderRightX;
+
+            spacerRIcon->setFixedWidth(qMax(spacerWidth, 0));  
+            spacerRIcon->move(volumeSliderRightX, y + 20);
+        }
+
         timeLabel->move(centerX - loopHIcon->width() / 2 - 230, y + 20);
     }
 }
 
+// -------------------------------------------------
 // Menu visibility
+// -------------------------------------------------
 void LayoutController::showMenu()
 {
     if (menuBar && !menuBar->isVisible())
